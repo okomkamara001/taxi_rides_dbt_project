@@ -3,7 +3,7 @@
 with tripdata as 
 (
   select *,
-    row_number() over(partition by vendorid, tpep_pickup_datetime) as rn
+    row_number() over(partition by safe_cast(vendorid as INT64), safe_cast(tpep_pickup_datetime as STRING)) as rn  -- Fixed missing closing parenthesis
   from {{ source('staging','yellow_tripdata') }}
   where vendorid is not null 
 )
