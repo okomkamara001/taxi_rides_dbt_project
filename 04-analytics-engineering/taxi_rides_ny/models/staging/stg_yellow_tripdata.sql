@@ -1,16 +1,21 @@
 {{ config(materialized='view') }}
- 
+
 with tripdata as 
 (
   select *,
-    row_number() over(partition by safe_cast(vendorid as INT64), safe_cast(tpep_pickup_datetime as STRING)) as rn  -- Fixed missing closing parenthesis
+    row_number() over(partition by SAFE_CAST(vendorid AS INT64), tpep_pickup_datetime) as rn
   from {{ source('staging','yellow_tripdata') }}
-  where vendorid is not null 
+  where vendorid is not null   
 )
+
 select
    -- identifiers
     {{ dbt_utils.generate_surrogate_key(['vendorid', 'tpep_pickup_datetime']) }} as tripid,    
-    {{ dbt.safe_cast("vendorid", api.Column.translate_type("integer")) }} as vendorid,
+
+    -- Ensure vendorid is safely casted to INT64
+    {{ dbt.safe_cast("vendorid", api.Column.translate_type("FLOAT64")) }} as vendorid,
+
+    -- Other columns
     {{ dbt.safe_cast("ratecodeid", api.Column.translate_type("integer")) }} as ratecodeid,
     {{ dbt.safe_cast("pulocationid", api.Column.translate_type("integer")) }} as pickup_locationid,
     {{ dbt.safe_cast("dolocationid", api.Column.translate_type("integer")) }} as dropoff_locationid,
@@ -21,7 +26,7 @@ select
     
     -- trip info
     store_and_fwd_flag,
-    {{ dbt.safe_cast("passenger_count", api.Column.translate_type("integer")) }} as passenger_count,
+    SAFE_CAST(passenger_count AS FLOAT64) as passenger_count,
     cast(trip_distance as numeric) as trip_distance,
     -- yellow cabs are always street-hail
     1 as trip_type,
@@ -35,14 +40,16 @@ select
     cast(0 as numeric) as ehail_fee,
     cast(improvement_surcharge as numeric) as improvement_surcharge,
     cast(total_amount as numeric) as total_amount,
-    coalesce({{ dbt.safe_cast("payment_type", api.Column.translate_type("integer")) }},0) as payment_type,
+
+    -- Fix: Ensure payment_type is safely casted to INTEGER (or FLOAT64 depending on your requirement)
+    coalesce({{ dbt.safe_cast("payment_type", api.Column.translate_type("integer")) }}, 0) as payment_type,
+
+    -- Get the payment_type_description
     {{ get_payment_type_description('payment_type') }} as payment_type_description
+
 from tripdata
 where rn = 1
 
--- dbt build --select <model.sql> --vars '{'is_test_run: false}'
 {% if var('is_test_run', default=true) %}
-
   limit 100
-
 {% endif %}
