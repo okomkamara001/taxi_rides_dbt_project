@@ -37,7 +37,8 @@ models:
             description: The date and time when the meter was engaged.
           - name: dropoff_datetime 
             description: The date and time when the meter was disengaged.
-          - name: Passenger_count 
+          - name: Passenger_count
+            data_type: INT64 
             description: The number of passengers in the vehicle. This is a driver-entered value.
           - name: Trip_distance 
             description: The elapsed trip distance in miles reported by the taximeter.
@@ -131,6 +132,7 @@ models:
           - name: dropoff_datetime 
             description: The date and time when the meter was disengaged.
           - name: Passenger_count
+            data_type: INT64
             description: The number of passengers in the vehicle. This is a driver-entered value.
           - name: Trip_distance 
             description: The elapsed trip distance in miles reported by the taximeter.
