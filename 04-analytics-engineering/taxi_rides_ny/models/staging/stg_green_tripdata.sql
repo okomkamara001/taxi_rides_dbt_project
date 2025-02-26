@@ -7,7 +7,7 @@
 with tripdata as 
 (
   select *,
-    row_number() over (partition by safe_cast(vendorid as integer), safe_cast(lpep_pickup_datetime as STRING)) as rn
+    row_number() over(partition by vendorid, lpep_pickup_datetime) as rn
   from {{ source('staging','green_tripdata') }}
   where vendorid is not null 
 )
@@ -25,7 +25,7 @@ select
     
     -- trip info
     store_and_fwd_flag,
-    safe_cast(passenger_count as INT64) as passenger_count,
+    {{ dbt.safe_cast("passenger_count", api.Column.translate_type("integer")) }} as passenger_count,
     cast(trip_distance as numeric) as trip_distance,
     {{ dbt.safe_cast("trip_type", api.Column.translate_type("integer")) }} as trip_type,
 
@@ -38,7 +38,7 @@ select
     cast(ehail_fee as numeric) as ehail_fee,
     cast(improvement_surcharge as numeric) as improvement_surcharge,
     cast(total_amount as numeric) as total_amount,
-    coalesce({{ dbt.safe_cast("payment_type", api.Column.translate_type("FLOAT64")) }},0) as payment_type,
+    coalesce({{ dbt.safe_cast("payment_type", api.Column.translate_type("integer")) }},0) as payment_type,
     {{ get_payment_type_description("payment_type") }} as payment_type_description
 from tripdata
 where rn = 1
